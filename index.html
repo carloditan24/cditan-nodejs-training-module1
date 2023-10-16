@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metrics</title>
+</head>
+<body>
+    <div id="error-message" style="color: red;"></div>
+    <div id="metrics-container" style="display: none;">
+        <h1>Metrics</h1>
+        <table id="metrics">
+            <thead>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+    <script>
+        const errorDiv = document.getElementById('error-message');
+        function updateTableData(data) {
+            errorDiv.style.display = "none";
+            const table = document.getElementById('metrics');
+            // fillout headers
+            const tableHeader = table.getElementsByTagName('thead')[0];
+            while (tableHeader.firstChild) {
+                tableHeader.removeChild(tableHeader.firstChild)
+            }
+            const dataHeaderRow = tableHeader.insertRow(0);
+            const dataHeaders = [
+                'Rank',
+                'Country',
+                'GDP Per Capita',
+                'Social Support',
+                'Healthy Life Expectancy',
+                'Freedom To Make Life Choices',
+                'Generosity',
+                'Perceptions of Corruption'
+            ];
+            dataHeaders.forEach((value, index) => {
+                dataHeaderRow.insertCell(index).innerHTML = value;
+            });
+
+            // fillout data
+            const tableBody = table.getElementsByTagName('tbody')[0];
+            while (tableBody.firstChild) {
+                tableBody.removeChild(tableBody.firstChild);
+            }
+            const attributes = [
+                'rank',
+                'country',
+                'GDP per capita',
+                'Social support',
+                'Healthy life expectancy',
+                'Freedom to make life choices',
+                'Generosity',
+                'Perceptions of corruption'
+            ];
+            data.forEach(item => {
+                const row = tableBody.insertRow(tableBody.rows.length);
+                attributes.forEach((attribute, index) => {
+                    row.insertCell(index).innerHTML = item[attribute];
+                });
+            });
+        }
+        
+        const container = document.getElementById('metrics-container');
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const metrics = document.getElementById('metrics');
+            fetch('https://fw3nhg-5000.csb.app/metrics')
+            .then((response) => response.json())
+            .then((data) => {
+                if (Array.isArray(data)) {
+                    updateTableData(data);
+                    container.style.display = "block";
+                } else {
+                    errorDiv.textContent = data.message;
+                    container.style.display = "none";
+                }
+            })
+            .catch((error) => console.error('Error fetching CSV data:', error));
+         });
+
+         const ws = new WebSocket('wss://fw3nhg-3000.csb.app');
+
+         ws.addEventListener('open', (event) => {
+            console.log("Connected to web socket.")
+         });
+
+         ws.addEventListener('message', (event) => {
+            if (event.data instanceof Blob) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const dataArray = new Uint8Array(reader.result);
+                    const json = new TextDecoder().decode(dataArray);
+                    updateTableData(JSON.parse(json));
+                    errorDiv.style.display = "none";
+                    container.style.display = "block";
+                }
+                reader.readAsArrayBuffer(event.data);
+            } else if (typeof event.data === 'string') {
+                const errorMessageData = JSON.parse(event.data);
+                errorDiv.textContent = errorMessageData.message;
+                errorDiv.style.display = "block";
+                container.style.display = "none";
+            }
+         });
+
+         ws.addEventListener('close', () => {
+            console.log('Web socket closed.')
+         });
+    </script>
+</body>
+</html>
