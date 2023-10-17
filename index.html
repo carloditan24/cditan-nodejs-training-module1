@@ -68,7 +68,7 @@
 
         document.addEventListener("DOMContentLoaded", function() {
             const metrics = document.getElementById('metrics');
-            fetch('https://fw3nhg-5000.csb.app/metrics')
+            fetch('/metrics')
             .then((response) => response.json())
             .then((data) => {
                 if (Array.isArray(data)) {
@@ -81,8 +81,7 @@
             })
             .catch((error) => console.error('Error fetching CSV data:', error));
          });
-
-         const ws = new WebSocket('wss://fw3nhg-3000.csb.app');
+         const ws = new WebSocket(`wss://${window.location.hostname.replace('5000', '3000')}`);
 
          ws.addEventListener('open', (event) => {
             console.log("Connected to web socket.")
